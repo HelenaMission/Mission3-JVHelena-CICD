@@ -1,35 +1,72 @@
-# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code and run tests across different versions of node
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code, run tests, and deploy to Azure Web Apps
+# For more information, see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
 
-name: Node.js CI
+name: Node.js CI and Deployment
 
 on:
   push:
-    branches: ["feature/*", "main"]
+    branches:
+      - "feature/*"
   pull_request:
-    branches: ["develop", "main"]
+    branches:
+      - "develop"
+      - "main"
 
 jobs:
-  build:
+  build_and_test:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [14.x, 16.x, 18.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
-
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v2
+
       - name: Use Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
-          cache: "npm"
+          registry-url: "https://registry.npmjs.org"
+
+      - name: Install NPM
+        run: npm install
 
       - name: Install Dependencies
-        run: npm install
-      - run: npm ci
-      # - run: npm run build --if-present
-      - run: npm test
+        run: npm ci
 
-      # comment added
+      - name: Build
+        run: npm run build
+
+      - name: Run Tests
+        run: npm test
+
+      - name: Upload artifact for deployment job
+        uses: actions/upload-artifact@v2
+        with:
+          name: node-app
+          path: |
+            dist/
+            src/
+            test/
+            mocharc.json
+            package-lock.json
+            package.json
+            tsconfig.json
+            .gitignore
+
+  static_code_analysis:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Authenticate with Snyk
+        run: snyk auth ${{ secrets.SNYK_TOKEN }}
+
+      - name: Run Snyk Scan
+        run: snyk test --all-projects --severity-threshold=high
+
+        #comment 12

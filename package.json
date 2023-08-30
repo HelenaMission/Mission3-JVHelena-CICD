@@ -6,7 +6,8 @@
   "scripts": {
     "test": "mocha --exit",
     "dev": "tsnd ./src/App.ts",
-    "start": "tsnd /Users/helenalee/Desktop/Mission1/Backend/src/App.ts"
+    "start": "tsnd /Users/helenalee/Desktop/Mission1/Backend/src/App.ts",
+    "build": "tsc"
   },
   "mocha": {
     "require": [
